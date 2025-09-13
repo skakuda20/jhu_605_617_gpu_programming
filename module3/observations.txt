@@ -1,0 +1,6 @@
+The example assignment shows a clear CPU vs GPU comparision using the chrono library to accurately measure
+the runtime on each hardware type. The example code correctly handles memory management with the proper malloc, 
+copy, and free calls. While the example main function tests straight vector addition, which is
+a non-branching function, it fails to test and compare the performance of a similar function that does 
+contain branching. The GPU timing is wrapped around add<<<...>>> without cudaDeviceSynchronize() which may
+result in the timing being incorrect. 
