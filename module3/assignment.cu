@@ -58,16 +58,16 @@ void thresholdHost(const int *input, int *output, int n) {
 // ================== Main ==================
 int main(int argc, char* argv[]) {
     // Default config
-    int blocks = 512;
-    int threads = 256;
-
+    int totalThreads = 256;
+    int blockSize = 256;
     // Parse command-line args
     if (argc == 3) {
-        blocks = atoi(argv[1]);
-        threads = atoi(argv[2]);
+        totalThreads = atoi(argv[1]);
+        blockSize = atoi(argv[2]);
     }
-    std::cout << "Running with " << blocks << " blocks, "
-              << threads << " threads per block\n";
+    int numBlocks = (N + totalThreads - 1) / totalThreads;
+    std::cout << "Running with " << numBlocks << " blocks, "
+              << blockSize << " threads per block\n";
 
     // Allocate host memory
     int *h_in  = new int[N];
@@ -92,7 +92,7 @@ int main(int argc, char* argv[]) {
     std::cout << "\n=== Non-Branching: Invert Image ===\n";
 
     auto startGPU = std::chrono::high_resolution_clock::now();
-    invertKernel<<<blocks, threads>>>(d_in, d_out, N);
+    invertKernel<<<numBlocks, blockSize>>>(d_in, d_out, N);
     CUDA_CHECK(cudaDeviceSynchronize());
     auto stopGPU = std::chrono::high_resolution_clock::now();
 
@@ -122,7 +122,7 @@ int main(int argc, char* argv[]) {
     std::cout << "\n=== Branching: Threshold Filter ===\n";
 
     startGPU = std::chrono::high_resolution_clock::now();
-    thresholdKernel<<<blocks, threads>>>(d_in, d_out, N);
+    thresholdKernel<<<numBlocks, blockSize>>>(d_in, d_out, N);
     CUDA_CHECK(cudaDeviceSynchronize());
     stopGPU = std::chrono::high_resolution_clock::now();
 
