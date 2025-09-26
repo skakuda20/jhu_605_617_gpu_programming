@@ -17,6 +17,11 @@ __global__ void erosionKernel(
     int kernelRadius               // structuring element radius (e.g., 1 for 3x3)
 );
 
+
+// Utility function to load halo pixels into shared memory
+__device__ void load_halo_pixels(int tile[BLOCK_SIZE + 2][BLOCK_SIZE + 2], const int* d_input,
+                                 int globalX, int globalY, int width, int height, int radius);
+
 // Constant Memory Declaration
 // Structuring element (e.g., 3x3 mask)
 // Filled from host with cudaMemcpyToSymbol()

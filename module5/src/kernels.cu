@@ -4,6 +4,26 @@
 // Constant memory for structuring element
 __constant__ int d_structuringElement[9];
 
+
+__device__ void load_halo_pixels(int tile[BLOCK_SIZE + 2][BLOCK_SIZE + 2], const int* d_input,
+                                 int globalX, int globalY, int width, int height, int radius) {
+    // Load halo pixels around the block (edges and corners)
+    // Each thread loads its own halo pixel if at the border
+    for (int dy = -radius; dy <= radius; ++dy) {
+        for (int dx = -radius; dx <= radius; ++dx) {
+            int lx = threadIdx.x + radius + dx;
+            int ly = threadIdx.y + radius + dy;
+            int gx = globalX + dx;
+            int gy = globalY + dy;
+            if (lx >= 0 && lx < BLOCK_SIZE + 2 && ly >= 0 && ly < BLOCK_SIZE + 2 &&
+                gx >= 0 && gx < width && gy >= 0 && gy < height) {
+                tile[ly][lx] = d_input[gy * width + gx];
+            }
+        }
+    }
+}
+
+
 __global__ void erosionKernel(int* d_input, int* d_output, int width, int height, int radius) {
     // Shared memory tile with halo
     __shared__ int tile[BLOCK_SIZE + 2][BLOCK_SIZE + 2];
@@ -40,3 +60,4 @@ __global__ void erosionKernel(int* d_input, int* d_output, int width, int height
 
         // Write result to global memory
         d_output[globalY * width + globalX] = minVal;
+    }
