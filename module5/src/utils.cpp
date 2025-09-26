@@ -1,5 +1,5 @@
 // utils.cpp
-include "utils.h"
+#include "utils.h"
 
 // // Load image into grayscale array
 // function load_image(filename):

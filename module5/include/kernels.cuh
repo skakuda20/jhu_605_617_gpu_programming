@@ -1,5 +1,4 @@
-#ifndef KERNELS_CUH
-#define KERNELS_CUH
+#pragma once
 
 #include <cuda_runtime.h>
 
@@ -10,11 +9,11 @@
 
 // Erosion kernel (CUDA global function)
 __global__ void erosionKernel(
-    const unsigned char* d_input,  // device input image
-    unsigned char* d_output,       // device output image
+    int* d_input,  // device input image
+    int* d_output,       // device output image
     int width,                     // image width
     int height,                    // image height
-    int kernelRadius               // structuring element radius (e.g., 1 for 3x3)
+    int radius               // structuring element radius (e.g., 1 for 3x3)
 );
 
 
@@ -22,9 +21,9 @@ __global__ void erosionKernel(
 __device__ void load_halo_pixels(int tile[BLOCK_SIZE + 2][BLOCK_SIZE + 2], const int* d_input,
                                  int globalX, int globalY, int width, int height, int radius);
 
+void copy_to_constant_memory(const int* hostMask);
+
 // Constant Memory Declaration
 // Structuring element (e.g., 3x3 mask)
 // Filled from host with cudaMemcpyToSymbol()
-__constant__ int d_structuringElement[9];
-
-#endif // KERNELS_CUH
+extern __constant__ int d_structuringElement[9];

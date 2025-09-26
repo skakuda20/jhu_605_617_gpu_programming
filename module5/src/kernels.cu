@@ -1,9 +1,6 @@
 // kernels.cu
 #include "kernels.cuh"
 
-// Constant memory for structuring element
-__constant__ int d_structuringElement[9];
-
 
 __device__ void load_halo_pixels(int tile[BLOCK_SIZE + 2][BLOCK_SIZE + 2], const int* d_input,
                                  int globalX, int globalY, int width, int height, int radius) {
@@ -23,6 +20,11 @@ __device__ void load_halo_pixels(int tile[BLOCK_SIZE + 2][BLOCK_SIZE + 2], const
     }
 }
 
+
+// Host function to copy mask to constant memory
+void copy_to_constant_memory(const int* hostMask) {
+    cudaMemcpyToSymbol(d_structuringElement, hostMask, 9 * sizeof(int));
+}
 
 __global__ void erosionKernel(int* d_input, int* d_output, int width, int height, int radius) {
     // Shared memory tile with halo
@@ -61,3 +63,6 @@ __global__ void erosionKernel(int* d_input, int* d_output, int width, int height
         // Write result to global memory
         d_output[globalY * width + globalX] = minVal;
     }
+}
+
+__constant__ int d_structuringElement[9];
