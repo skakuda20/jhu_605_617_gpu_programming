@@ -12,7 +12,6 @@ enable_language(CUDA)
 set(SOURCES
     src/main.cu
     src/kernels.cu
-    src/utils.cpp
 )
 
 set(HEADERS
@@ -34,10 +33,3 @@ set_target_properties(cuda_erosion PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON
     CUDA_ARCHITECTURES 75
 )
-
-# Libraries (Optional: e.g., OpenCV)
-# If you want to use OpenCV for image I/O instead of raw utils.cpp,
-# uncomment the following:
-# find_package(OpenCV REQUIRED)
-# target_include_directories(cuda_erosion PRIVATE ${OpenCV_INCLUDE_DIRS})
-# target_link_libraries(cuda_erosion PRIVATE ${OpenCV_LIBS})

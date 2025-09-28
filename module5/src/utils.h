@@ -1,6 +1,4 @@
 // utils.h
-// declare function load_image(filename) -> (image_array, width, height)
-// declare function save_image(filename, image_array, width, height)
 
 #pragma once
 #include <cuda_runtime.h>
