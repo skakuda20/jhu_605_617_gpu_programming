@@ -2,8 +2,8 @@
 #include <iostream>
 #include <chrono>
 #include <cuda_runtime.h>
-#include <cstdlib>  // rand()
-#include <ctime>    // time()
+#include <cstdlib>
+#include <ctime> 
 
 #define N 1000000   // total elements in array
 
@@ -21,10 +21,10 @@
 // ================== GPU Kernels ==================
 
 // Non-branching: subtract image
-__global__ void subtractKernel(const int *input, int *output, int n) {
+__global__ void invertKernel(const int *input, int *output, int n) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < n) {
-        output[idx] = 255 - input[idx]; // always same operation
+        output[idx] = 255 - input[idx];
     }
 }
 
@@ -32,7 +32,7 @@ __global__ void subtractKernel(const int *input, int *output, int n) {
 __global__ void thresholdKernel(const int *input, int *output, int n) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < n) {
-        if (input[idx] > 128)          // branching here
+        if (input[idx] > 128)   // branching
             output[idx] = 255;
         else
             output[idx] = 0;
@@ -55,7 +55,7 @@ void thresholdHost(const int *input, int *output, int n) {
     }
 }
 
-// ================== Main ==================
+
 int main(int argc, char* argv[]) {
     // Default config
     // Define thread and block sizes to test
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
     int *h_out = new int[N];   // GPU results
     int *h_ref = new int[N];   // CPU results
 
-    // Initialize with random pixel values [0,255]
+    // Initialize with random values [0,255]
     srand(time(0));
     for (int i = 0; i < N; i++) {
         h_in[i] = rand() % 256;
@@ -81,17 +81,17 @@ int main(int argc, char* argv[]) {
     // Copy input to device
     CUDA_CHECK(cudaMemcpy(d_in, h_in, N * sizeof(int), cudaMemcpyHostToDevice));
 
-    // If command-line args are provided, test that config first
+    // Check for cmdline args
     if (argc == 3) {
         int totalThreads = atoi(argv[1]);
         int blockSize = atoi(argv[2]);
-        int numBlocks = (N + totalThreads - 1) / totalThreads;
+        int numBlocks = (N + blockSize - 1) / blockSize;
         std::cout << "\n=== Command-line Config: " << numBlocks << " blocks, " << blockSize << " threads per block ===\n";
 
         // Non-Branching Test
         std::cout << "Non-Branching: Subtract Image\n";
         auto startGPU = std::chrono::high_resolution_clock::now();
-        subtractKernel<<<numBlocks, blockSize>>>(d_in, d_out, N);
+        invertKernel<<<numBlocks, blockSize>>>(d_in, d_out, N);
         CUDA_CHECK(cudaDeviceSynchronize());
         auto stopGPU = std::chrono::high_resolution_clock::now();
 
@@ -145,12 +145,12 @@ int main(int argc, char* argv[]) {
         std::cout << "Results match? " << (correct ? "YES" : "NO") << "\n";
     }
 
-    // Now test all combinations
+    // Loop through all combinations
     for (int t = 0; t < 3; t++) {
         for (int b = 0; b < 3; b++) {
             int totalThreads = threadCounts[t];
             int blockSize = blockSizes[b];
-            int numBlocks = (N + totalThreads - 1) / totalThreads;
+            int numBlocks = (N + blockSize - 1) / blockSize;
             std::cout << "\n=== Config: " << numBlocks << " blocks, " << blockSize << " threads per block ===\n";
 
             // Non-Branching Test
@@ -163,7 +163,7 @@ int main(int argc, char* argv[]) {
             CUDA_CHECK(cudaMemcpy(h_out, d_out, N * sizeof(int), cudaMemcpyDeviceToHost));
 
             auto startCPU = std::chrono::high_resolution_clock::now();
-            invertHost(h_in, h_ref, N);
+            subtractHost(h_in, h_ref, N);
             auto stopCPU = std::chrono::high_resolution_clock::now();
 
             bool correct = true;

@@ -66,8 +66,6 @@ int main(int argc, char* argv[]) {
     erosionKernel<<<gridSize, blockSize, sharedMemSize>>>(d_input, d_output, width, height, radius);
     CUDA_CHECK(cudaDeviceSynchronize());
 
-    std::cout << "[Shared/Register] See kernel output below for shared/register memory demonstration.\n";
-
     // Copy result device to host
     CUDA_CHECK(cudaMemcpy(host_output, d_output, imgSize * sizeof(int), cudaMemcpyDeviceToHost));
 
