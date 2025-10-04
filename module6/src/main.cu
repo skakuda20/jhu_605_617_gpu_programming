@@ -30,46 +30,39 @@ int main(int argc, char* argv[]) {
     int *d_input, *d_blurOut, *d_errosionOut;
     size_t imageBytes = imgSize * sizeof(int);
     
+    std::cout << "Block size: (" << blockDimX << ", " << blockDimY << ")\n";
+    std::cout << "Grid size: (" << gridSize.x << ", " << gridSize.y << ")\n";
+
+    std::cout << "Allocating device memory...\n";
     CUDA_CHECK(cudaMalloc(&d_input, imageBytes));
     CUDA_CHECK(cudaMalloc(&d_blurOut, imageBytes));
     CUDA_CHECK(cudaMalloc(&d_errosionOut, imageBytes));
 
-    // Compy input image to device
+    std::cout << "Copying input image to device...\n";
     CUDA_CHECK(cudaMemcpy(d_input, image, imageBytes, cudaMemcpyHostToDevice));
-    
-    // Configure kernel launch
-    dim3 blockSize(blockDimX, blockDimY);
-    dim3 gridSize((width + blockDimX - 1) / blockDimX, (height + blockDimY - 1) / blockDimY);
 
-    // Create streams
+    std::cout << "Creating CUDA streams and events...\n";
     cudaStream_t stream1, stream2;
     CUDA_CHECK(cudaStreamCreate(&stream1));
     CUDA_CHECK(cudaStreamCreate(&stream2));
-
-    // Create events
     cudaEvent_t start, stop;
     CUDA_CHECK(cudaEventCreate(&start));
     CUDA_CHECK(cudaEventCreate(&stop));
 
-    // Start recording
+    std::cout << "Launching gaussianBlurKernel and erosionKernel...\n";
     CUDA_CHECK(cudaEventRecord(start));
-
-    // Launch kernels in different streams
     gaussianBlurKernel<<<gridSize, blockSize, 0, stream1>>>(d_input, d_blurOut, width, height);
     erosionKernel<<<gridSize, blockSize, (blockDimX + 2) * (blockDimY + 2) * sizeof(int), stream2>>>(d_input, d_errosionOut, width, height, 1);
-    // blurKernel<<<gridSize, blockSize, 0, stream1>>>(d_input, d_blurOut, width, height);
-    // edgeKernel<<<gridSize, blockSize, 0, stream2>>>(d_input, d_edgeOut, width, height);
 
-    // Stop recording
     CUDA_CHECK(cudaEventRecord(stop));
     CUDA_CHECK(cudaEventSynchronize(stop));
+    std::cout << "Kernels finished executing.\n";
 
-    // MEasure elapsed time
     float milliseconds = 0;
     CUDA_CHECK(cudaEventElapsedTime(&milliseconds, start, stop));
     std::cout << "Time elapsed for concurrent execution: " << milliseconds << " ms\n";
 
-    // Cleanup
+    std::cout << "Cleaning up resources...\n";
     CUDA_CHECK(cudaEventDestroy(start));
     CUDA_CHECK(cudaEventDestroy(stop));
     CUDA_CHECK(cudaStreamDestroy(stream1));
@@ -78,5 +71,6 @@ int main(int argc, char* argv[]) {
     CUDA_CHECK(cudaFree(d_blurOut));
     CUDA_CHECK(cudaFree(d_errosionOut));
     delete[] image;
+    std::cout << "Done.\n";
     return 0;
 }

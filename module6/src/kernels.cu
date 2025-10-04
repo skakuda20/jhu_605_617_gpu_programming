@@ -1,6 +1,6 @@
 #include "kernels.cuh"
 
-// load_halo_pixels implementation (already provided in kernels.cuh, can be left as is or moved here if needed)
+// load_halo_pixels implementation
 __device__ void load_halo_pixels(int* tile, int tilePitch, const int* d_input,
                                  int globalX, int globalY, int width, int height, int radius, int blockDimX, int blockDimY) {
     int tileX = blockDimX + 2 * radius;
@@ -30,7 +30,7 @@ __device__ void load_halo_pixels(int* tile, int tilePitch, const int* d_input,
     __syncthreads();
 }
 
-// Erosion Kernel
+// Erosion Kernel (from previous assignment)
 __global__ void erosionKernel(int* d_input, int* d_output, int width, int height, int radius) {
     int blockDimX = blockDim.x;
     int blockDimY = blockDim.y;
@@ -65,53 +65,53 @@ __global__ void erosionKernel(int* d_input, int* d_output, int width, int height
 __constant__ int d_structuringElement[9];
 
 // Simple inversion kernel
-__global__ void invertKernel(int* d_input, int* d_output, int width, int height) {
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-    if (x < width && y < height) {
-        int idx = y * width + x;
-        d_output[idx] = 255 - d_input[idx];
-    }
-}
+// __global__ void invertKernel(int* d_input, int* d_output, int width, int height) {
+//     int x = blockIdx.x * blockDim.x + threadIdx.x;
+//     int y = blockIdx.y * blockDim.y + threadIdx.y;
+//     if (x < width && y < height) {
+//         int idx = y * width + x;
+//         d_output[idx] = 255 - d_input[idx];
+//     }
+// }
 
 // Simple 3x3 box blur kernel using shared memory
-__global__ void blurKernel(int* d_input, int* d_output, int width, int height) {
-    const int radius = 1; // 3x3 kernel
-    int tileX = blockDim.x + 2 * radius;
-    int tileY = blockDim.y + 2 * radius;
-    extern __shared__ int tile[];
+// __global__ void blurKernel(int* d_input, int* d_output, int width, int height) {
+//     const int radius = 1; // 3x3 kernel
+//     int tileX = blockDim.x + 2 * radius;
+//     int tileY = blockDim.y + 2 * radius;
+//     extern __shared__ int tile[];
 
-    int globalX = blockIdx.x * blockDim.x + threadIdx.x;
-    int globalY = blockIdx.y * blockDim.y + threadIdx.y;
-    int localX = threadIdx.x + radius;
-    int localY = threadIdx.y + radius;
+//     int globalX = blockIdx.x * blockDim.x + threadIdx.x;
+//     int globalY = blockIdx.y * blockDim.y + threadIdx.y;
+//     int localX = threadIdx.x + radius;
+//     int localY = threadIdx.y + radius;
 
-    // Load halo pixels
-    for (int y = threadIdx.y; y < tileY; y += blockDim.y) {
-        for (int x = threadIdx.x; x < tileX; x += blockDim.x) {
-            int gx = blockIdx.x * blockDim.x + x - radius;
-            int gy = blockIdx.y * blockDim.y + y - radius;
-            if (gx >= 0 && gx < width && gy >= 0 && gy < height)
-                tile[y * tileX + x] = d_input[gy * width + gx];
-            else
-                tile[y * tileX + x] = 0;
-        }
-    }
-    __syncthreads();
+//     // Load halo pixels
+//     for (int y = threadIdx.y; y < tileY; y += blockDim.y) {
+//         for (int x = threadIdx.x; x < tileX; x += blockDim.x) {
+//             int gx = blockIdx.x * blockDim.x + x - radius;
+//             int gy = blockIdx.y * blockDim.y + y - radius;
+//             if (gx >= 0 && gx < width && gy >= 0 && gy < height)
+//                 tile[y * tileX + x] = d_input[gy * width + gx];
+//             else
+//                 tile[y * tileX + x] = 0;
+//         }
+//     }
+//     __syncthreads();
 
-    // Apply 3x3 box blur
-    if (globalX < width && globalY < height) {
-        int sum = 0;
-        for (int ky = -radius; ky <= radius; ++ky) {
-            for (int kx = -radius; kx <= radius; ++kx) {
-                sum += tile[(localY + ky) * tileX + (localX + kx)];
-            }
-        }
-        d_output[globalY * width + globalX] = sum / 9;
-    }
-}
+//     // Apply 3x3 box blur
+//     if (globalX < width && globalY < height) {
+//         int sum = 0;
+//         for (int ky = -radius; ky <= radius; ++ky) {
+//             for (int kx = -radius; kx <= radius; ++kx) {
+//                 sum += tile[(localY + ky) * tileX + (localX + kx)];
+//             }
+//         }
+//         d_output[globalY * width + globalX] = sum / 9;
+//     }
+// }
 
-// Example Gaussian blur kernel (simple version, not optimized)
+// Simple Gaussian blur kernel
 __global__ void gaussianBlurKernel(int* d_input, int* d_output, int width, int height) {
     // 3x3 Gaussian kernel: [1 2 1; 2 4 2; 1 2 1] normalized by 16
     const int kernel[3][3] = {{1,2,1},{2,4,2},{1,2,1}};
