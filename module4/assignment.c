@@ -1,5 +1,6 @@
 //Based on the work of Andrew Krepps
 #include <stdio.h>
+#include <stdlib.h>
 
 int main(int argc, char** argv)
 {

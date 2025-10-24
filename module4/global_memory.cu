@@ -13,7 +13,7 @@
 
 static const int WORK_SIZE = 256;
 
-#define NUM_ELEMENTS 4096
+#define NUM_ELEMENTS 256*1000
 
 typedef struct {
 	unsigned int a;
