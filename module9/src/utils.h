@@ -1,9 +1,18 @@
 // utils.h
 
 #pragma once
-#include <cuda_runtime.h>
-#include <iostream>
 
+#include "cuda_compat.h"
+
+#define NO_CUDA_MATH_OVERLOADS
+#include <cuda_runtime.h>
+#include <curand.h>
+#include <cufft.h>
+
+#include "kernels.cuh"
+
+#include <cstdio>
+// #include <math.h>
 
 #define CHECK_CUDA(call) \
     { cudaError_t err = (call); if (err != cudaSuccess) { \
@@ -15,8 +24,7 @@
 
 #define CHECK_CUFFT(call) \
     { cufftResult res = (call); if (res != CUFFT_SUCCESS) { \
-    fprintf(stderr, "cuFFT Error at %s:%d\n", __FILE__, __LINE__); exit(EXIT_FAILURE); }}
-
+    fprintf(stderr, "cuFFT Error at %s:%d (code=%d)\n", __FILE__, __LINE__, res); exit(EXIT_FAILURE); }}
 
 // =======================================================================================
 
@@ -30,7 +38,11 @@ void generateGaussianNoise(float* d_image, int imgSize, unsigned long long seed 
 
 cufftHandle createFFTPlan(int width, int height) {
     cufftHandle plan;
-    CHECK_CUFFT(cufftPlan2d(&plan, height, width, CUFFT_R2C));
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA Error before cuFFT plan: %s\n", cudaGetErrorString(err));
+    }
+    CHECK_CUFFT(cufftPlan2d(&plan, width, height, CUFFT_R2C)); // width first, then height
     return plan;
 }
 
@@ -42,12 +54,23 @@ void runIFFT(cufftHandle plan, cufftComplex* d_freqData, float* d_image) {
     CHECK_CUFFT(cufftExecC2R(plan, d_freqData, d_image));
 }
 
-void normalizeAndStats(float* h_output, int imgSize) {
-    for (int i = 0; i < imgSize; ++i) h_output[i] /= imgSize;
+void statsOnly(float* h_output, int imgSize) {
     float minVal = 1e9, maxVal = -1e9;
     for (int i = 0; i < imgSize; ++i) {
         minVal = fminf(minVal, h_output[i]);
         maxVal = fmaxf(maxVal, h_output[i]);
     }
-    printf("Filtered image stats: min=%.4f max=%.4f\n", minVal, maxVal);
+    printf("Raw image stats: min=%.4f max=%.4f\n", minVal, maxVal);
+}
+
+void normalizeAndStats(float* h_output, int imgSize) {
+    for (int i = 0; i < imgSize; ++i) h_output[i] /= imgSize;
+    float minVal = 1e9, maxVal = -1e9, sum = 0.0f;
+    for (int i = 0; i < imgSize; ++i) {
+        minVal = fminf(minVal, h_output[i]);
+        maxVal = fmaxf(maxVal, h_output[i]);
+        sum += h_output[i];
+    }
+    float mean = sum / imgSize;
+    printf("Filtered image stats: min=%.4f max=%.4f mean=%.4f\n", minVal, maxVal, mean);
 }

@@ -1,6 +1,4 @@
-// kernels.cu
-
-#include "kernels.cuh"
+#include <cufft.h> // Add this line
 
 // GPU kernel to apply a Gaussian low-pass filter in the frequency domain
 __global__ void applyGaussianFilter(cufftComplex* freqData, int width, int height, float sigma) {
