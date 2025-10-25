@@ -2,18 +2,19 @@
 
 #pragma once
 
-#include "cuda_compat.h"
-
 #define NO_CUDA_MATH_OVERLOADS
 #include <cuda_runtime.h>
 #include <curand.h>
 #include <cufft.h>
-
-#include "kernels.cuh"
-
 #include <cstdio>
-// #include <math.h>
 
+#include <thrust/device_vector.h>
+#include <thrust/reduce.h>
+#include <thrust/extrema.h>
+#include <thrust/transform.h>
+
+
+// Define CUDA checks
 #define CHECK_CUDA(call) \
     { cudaError_t err = (call); if (err != cudaSuccess) { \
     fprintf(stderr, "CUDA Error: %s (err_num=%d)\n", cudaGetErrorString(err), err); exit(EXIT_FAILURE); }}
@@ -26,8 +27,8 @@
     { cufftResult res = (call); if (res != CUFFT_SUCCESS) { \
     fprintf(stderr, "cuFFT Error at %s:%d (code=%d)\n", __FILE__, __LINE__, res); exit(EXIT_FAILURE); }}
 
-// =======================================================================================
 
+// Helper functions for noise generation and FFT operations
 void generateGaussianNoise(float* d_image, int imgSize, unsigned long long seed = 1234ULL) {
     curandGenerator_t gen;
     CHECK_CURAND(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
@@ -42,7 +43,7 @@ cufftHandle createFFTPlan(int width, int height) {
     if (err != cudaSuccess) {
         fprintf(stderr, "CUDA Error before cuFFT plan: %s\n", cudaGetErrorString(err));
     }
-    CHECK_CUFFT(cufftPlan2d(&plan, width, height, CUFFT_R2C)); // width first, then height
+    CHECK_CUFFT(cufftPlan2d(&plan, width, height, CUFFT_R2C));
     return plan;
 }
 
@@ -71,6 +72,17 @@ void normalizeAndStats(float* h_output, int imgSize) {
         maxVal = fmaxf(maxVal, h_output[i]);
         sum += h_output[i];
     }
+    float mean = sum / imgSize;
+    printf("Filtered image stats: min=%.4f max=%.4f mean=%.4f\n", minVal, maxVal, mean);
+}
+
+void normalizeAndStats(thrust::device_vector<float>& d_image, int imgSize) {
+    float* d_image_ptr = thrust::raw_pointer_cast(d_image.data());
+    thrust::transform(d_image_ptr, d_image_ptr + imgSize, d_image_ptr,
+                 [imgSize] __device__ (float x) { return x / imgSize; });
+    float minVal = *thrust::min_element(d_image_ptr, d_image_ptr + imgSize);
+    float maxVal = *thrust::max_element(d_image_ptr, d_image_ptr + imgSize);
+    float sum = thrust::reduce(d_image_ptr, d_image_ptr + imgSize, 0.0f, thrust::plus<float>());
     float mean = sum / imgSize;
     printf("Filtered image stats: min=%.4f max=%.4f mean=%.4f\n", minVal, maxVal, mean);
 }
