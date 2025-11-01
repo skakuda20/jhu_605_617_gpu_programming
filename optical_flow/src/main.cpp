@@ -37,10 +37,16 @@ int main(int argc, char** argv) {
         }
 
         cv::Mat flow;
+        flow.create(grayF.size(), CV_32FC2);
         t.tic();
         hornSchunckCPU(prevGrayF, grayF, flow, 1.0f, iterations);
         double ms = t.toc_ms();
         totalTime += ms; frames++;
+        std::cout << "flow size: " << flow.size() << " type: " << flow.type() << std::endl;
+        std::cout << "flow channels: " << flow.channels() << " expected: 2" << std::endl;
+        std::cout << "flow depth: " << flow.depth() << " expected: " << CV_32F << std::endl;
+        std::cout << "flow type (int): " << flow.type() << " (should be " << CV_32FC2 << " for Point2f)" << std::endl;
+        if (flow.empty()) { std::cerr << "flow is empty!" << std::endl; }
         //     std::cout << "[CPU] frame " << frames << " ms=" << ms << std::endl;
         // if (mode == "cpu") {
         //     t.tic();
@@ -70,3 +76,6 @@ int main(int argc, char** argv) {
     std::cout << "Average ms/frame: " << (totalTime / frames) << " FPS: " << (1000.0*frames/totalTime) << std::endl;
     return 0;
 }
+
+
+// basic running with: LD_LIBRARY_PATH=/lib/x86_64-linux-gnu ./optflow /home/kakudas/GitHub/EN605.617/optical_flow/sample_videos/simple_sat_output_4.mp4 cpu 10 worked
