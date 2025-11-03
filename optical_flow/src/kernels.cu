@@ -23,7 +23,7 @@ __global__ void compute_gradients_kernel(const float* I1, const float* I2, float
 
 }
 
-// One iteration update kernel (Jacobi-like): update uNew,vNew from u,v and gradients
+// One iteration update kernel
 __global__ void hs_iteration_kernel(const float* Ix, const float* Iy, const float* It,
                                     const float* u, const float* v, float* uNew, float* vNew,
                                     int w, int h, int stride, float alpha2) {
@@ -32,7 +32,7 @@ __global__ void hs_iteration_kernel(const float* Ix, const float* Iy, const floa
     if (x <= 0 || y <= 0 || x >= w-1 || y >= h-1) return;
     int idx = y*stride + x;
 
-    // local average of u,v (4 neighbors)
+    // local average of u,v
     float uBar = (u[idx-1] + u[idx+1] + u[idx-stride] + u[idx+stride]) * 0.25f;
     float vBar = (v[idx-1] + v[idx+1] + v[idx-stride] + v[idx+stride]) * 0.25f;
     float ix = Ix[idx], iy = Iy[idx], it = It[idx];

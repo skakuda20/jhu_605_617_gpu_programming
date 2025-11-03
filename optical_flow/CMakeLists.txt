@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-# project(gpu_optical_flow LANGUAGES CXX CUDA)
-project(optflow LANGUAGES CXX)
+project(gpu_optical_flow LANGUAGES CXX CUDA)
 
 
 
@@ -22,13 +21,16 @@ add_definitions(${GTK3_CFLAGS_OTHER})
 find_package(OpenCV REQUIRED)
 message(STATUS "OpenCV include: ${OpenCV_INCLUDE_DIRS}")
 
-include_directories(${OpenCV_INCLUDE_DIRS} src)
+include_directories(${OpenCV_INCLUDE_DIRS} src /usr/local/cuda/include)
+
+enable_language(CUDA)
 
 add_executable(optflow
     src/main.cpp
     src/cpu_flow.cpp
+    src/gpu_flow.cu
+    src/kernels.cu
     src/utils.cpp
-    # src/gpu_flow.cu
 )
 
 target_link_libraries(optflow ${OpenCV_LIBS} ${GTK3_LIBRARIES})
