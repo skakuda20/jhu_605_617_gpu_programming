@@ -14,7 +14,7 @@ void hornSchunckCPU(const cv::Mat &I1, const cv::Mat &I2, cv::Mat &flow, float a
   // Debug: check flow type after creation
   std::cout << "flow type after create: " << flow.type() << std::endl;
 
-  
+  // Initialize u and v  
   cv::Mat u = cv::Mat::zeros(rows, cols, CV_32F);
   cv::Mat v = cv::Mat::zeros(rows, cols, CV_32F);
   cv::Mat Ix(rows, cols, CV_32F), Iy(rows, cols, CV_32F), It(rows, cols, CV_32F);

@@ -1,11 +1,13 @@
 #include "kernels.cuh"
 
 __global__ void compute_gradients_kernel(const float* I1, const float* I2, float*  Ix,  float* Iy, float* It, int w, int h, int stride) {
+  // Compute image gradients Ix, Iy, It
   int x = blockIdx.x * blockDim.x + threadIdx.x;
   int y = blockIdx.y * blockDim.y + threadIdx.y;
 
   if (x <= 0 ||  y <= 0 || x >= w-1 || y >= h-1) return;
 
+  // central differences
   int idx = y*stride + x;
   float i1m = I1[y*stride + (x-1)];
   float i1p = I1[y*stride + (x+1)];
@@ -27,6 +29,7 @@ __global__ void compute_gradients_kernel(const float* I1, const float* I2, float
 __global__ void hs_iteration_kernel(const float* Ix, const float* Iy, const float* It,
                                     const float* u, const float* v, float* uNew, float* vNew,
                                     int w, int h, int stride, float alpha2) {
+    // Compute local averages
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
     if (x <= 0 || y <= 0 || x >= w-1 || y >= h-1) return;

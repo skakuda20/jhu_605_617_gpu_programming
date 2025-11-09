@@ -6,6 +6,7 @@
 #include <string>
 
 int main(int argc, char** argv) {
+    // Parse command line arguments
     if (argc < 2) {
         std::cout << "Usage: optflow <video-file> [cpu|gpu] [iterations]\n";
         return -1;
@@ -14,12 +15,14 @@ int main(int argc, char** argv) {
     std::string mode = (argc>2 ? argv[2] : "gpu");
     int iterations = (argc>3 ? std::stoi(argv[3]) : 100);
 
+    // Open video file
     cv::VideoCapture cap(videoPath);
     if (!cap.isOpened()) {
         std::cerr << "Failed to open " << videoPath << std::endl;
         return -1;
     }
 
+    // Frame and timing variables
     cv::Mat frame, prevGrayF, grayF;
     bool first = true;
     Timer t;
@@ -38,6 +41,7 @@ int main(int argc, char** argv) {
     }
 
     while (true) {
+        // Read next frame
         if (!cap.read(frame)) break;
         cv::cvtColor(frame, grayF, cv::COLOR_BGR2GRAY);
         grayF.convertTo(grayF, CV_32F, 1.0/255.0);
@@ -48,6 +52,7 @@ int main(int argc, char** argv) {
             continue;
         }
 
+        // Compute optical flow
         cv::Mat flow;
         flow.create(grayF.size(), CV_32FC2);
         t.tic();
@@ -58,6 +63,8 @@ int main(int argc, char** argv) {
         }
         double ms = t.toc_ms();
         totalTime += ms; frames++;
+
+        // Debugging prints
         std::cout << "flow size: " << flow.size() << " type: " << flow.type() << std::endl;
         std::cout << "flow channels: " << flow.channels() << " expected: 2" << std::endl;
         std::cout << "flow depth: " << flow.depth() << " expected: " << CV_32F << std::endl;
@@ -71,6 +78,7 @@ int main(int argc, char** argv) {
         cudaError_t err = cudaGetLastError();
         if (err != cudaSuccess) std::cerr << "CUDA error: " << cudaGetErrorString(err) << std::endl;
 
+    // Visualization
     cv::Mat overlay = frame.clone();
     drawFlowArrows(overlay, flow, 16);
     cv::Mat flowVis = flowToColor(flow);

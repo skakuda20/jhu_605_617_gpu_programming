@@ -3,7 +3,7 @@
 
 void drawFlowArrows(cv::Mat &img, const cv::Mat &flow, int step, const cv::Scalar &color) {
     CV_Assert(flow.type() == CV_32FC2);
-    // Tighter grid: smaller step
+    // Tighter grid -> smaller step
     for (int y = step/2; y < img.rows; y += step) {
         for (int x = step/2; x < img.cols; x += step) {
             cv::Point2f f = flow.at<cv::Point2f>(y, x);
