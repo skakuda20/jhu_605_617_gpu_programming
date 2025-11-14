@@ -7,16 +7,16 @@ __kernel void convolution(__global const uchar4* input,
 {
     int x = get_global_id(0);
     int y = get_global_id(1);
-    int half = maskWidth / 2;
+    int halfWidth = maskWidth / 2;
 
     float4 sum = (float4)(0.0f);
 
-    for (int j = -half; j <= half; j++) {
-        for (int i = -half; i <= half; i++) {
+    for (int j = -halfWidth; j <= halfWidth; j++) {
+        for (int i = -halfWidth; i <= halfWidth; i++) {
             int px = clamp(x + i, 0, width - 1);
             int py = clamp(y + j, 0, height - 1);
             uchar4 pixel = input[py * width + px];
-            float w = mask[(j + half) * maskWidth + (i + half)];
+            float w = mask[(j + halfWidth) * maskWidth + (i + halfWidth)];
             sum += convert_float4(pixel) * w;
         }
     }
