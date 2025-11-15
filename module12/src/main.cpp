@@ -15,7 +15,7 @@ struct Filter {
     int size;
 };
 
-// Example convolution filters
+// Convolution filters
 std::vector<Filter> filters = {
     {"blur",    {1/9.f,1/9.f,1/9.f, 1/9.f,1/9.f,1/9.f, 1/9.f,1/9.f,1/9.f}, 3},
     {"sharpen", { 0,-1, 0, -1, 5,-1, 0,-1, 0}, 3},
@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
 
     std::vector<unsigned char> output_pixels(img_size);
 
-    // ------------------ OpenCL Setup ------------------
+    // OpenCL Setup
     cl_int err;
 
     // Platform
@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
 
     cl_platform_id platform = platforms[0];
 
-    // Device (GPU preferred)
+    // Device
     cl_uint numDevices;
     clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 0, nullptr, &numDevices);
     std::vector<cl_device_id> devices(numDevices);
@@ -146,7 +146,7 @@ int main(int argc, char** argv) {
               << std::chrono::duration<double, std::milli>(end - start).count()
               << " ms\n";
 
-    // Convert back to OpenCV Mat (RGBA → BGR)
+    // Convert back to OpenCV Mat (RGBA -> BGR)
     cv::Mat outputRGBA(height, width, CV_8UC4, output_pixels.data());
     cv::Mat outputBGR;
     cv::cvtColor(outputRGBA, outputBGR, cv::COLOR_RGBA2BGR);
