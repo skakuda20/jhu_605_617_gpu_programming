@@ -31,6 +31,11 @@ add_executable(optflow
     src/gpu_flow.cu
     src/kernels.cu
     src/utils.cpp
+    src/utils.h
+    src/kernels_preprocess.cu
+    src/kernels_preprocess.cuh
+    src/pipeline.cu
+    src/pipeline.cuh
 )
 
 target_link_libraries(optflow ${OpenCV_LIBS} ${GTK3_LIBRARIES})

@@ -2,6 +2,8 @@
 #include "cpu_flow.h"
 #include "gpu_flow.h"
 #include "utils.h"
+#include "kernels_preprocess.cuh"
+#include "pipeline.cuh"
 #include <iostream>
 #include <string>
 
@@ -23,7 +25,7 @@ int main(int argc, char** argv) {
     }
 
     // Frame and timing variables
-    cv::Mat frame, prevGrayF, grayF;
+    cv::Mat frame, prevGrayF, grayF, gray, eq;
     bool first = true;
     Timer t;
     double totalTime = 0.0; int frames = 0;
@@ -40,12 +42,21 @@ int main(int argc, char** argv) {
         return -1;
     }
 
+    cudaStream_t stream;
+    cudaStreamCreate(&stream);
+
     while (true) {
         // Read next frame
         if (!cap.read(frame)) break;
-        cv::cvtColor(frame, grayF, cv::COLOR_BGR2GRAY);
-        grayF.convertTo(grayF, CV_32F, 1.0/255.0);
-
+        int w = frame.cols, h = frame.rows, stride = frame.cols;
+        preprocess_frame_cuda(frame, grayF, w, h, stride, stream);
+        cudaError_t err = cudaGetLastError();
+        if (err != cudaSuccess) {
+            std::cerr << "CUDA error after preprocess_frame_cuda: " << cudaGetErrorString(err) << std::endl;
+        }
+        std::cout << "grayF mean: " << cv::mean(grayF)[0] << std::endl;
+        std::cout << "grayF sample [0,0]: " << grayF.at<float>(0,0) << std::endl;
+        std::cout << "grayF sample [h/2,w/2]: " << grayF.at<float>(h/2,w/2) << std::endl;
         if (first) {
             prevGrayF = grayF.clone();
             first = false;
@@ -75,13 +86,23 @@ int main(int argc, char** argv) {
         std::cout << "Sample flow BR: " << flow.at<cv::Point2f>(flow.rows-10, flow.cols-10) << std::endl;
         std::cout << "prevGrayF mean: " << cv::mean(prevGrayF)[0] << ", grayF mean: " << cv::mean(grayF)[0] << std::endl;
 
-        cudaError_t err = cudaGetLastError();
-        if (err != cudaSuccess) std::cerr << "CUDA error: " << cudaGetErrorString(err) << std::endl;
+    CUDA_CHECK_KERNEL();
 
     // Visualization
     cv::Mat overlay = frame.clone();
     drawFlowArrows(overlay, flow, 16);
+    // Tune color output for better visibility
     cv::Mat flowVis = flowToColor(flow);
+    // Increase saturation and brightness for better contrast
+    cv::Mat hsv, flowVisBGR;
+    cv::cvtColor(flowVis, hsv, cv::COLOR_BGR2HSV);
+    std::vector<cv::Mat> hsvChannels;
+    cv::split(hsv, hsvChannels);
+    hsvChannels[1] = hsvChannels[1] * 3; // Increase saturation
+    hsvChannels[2] = hsvChannels[2] * 3; // Increase value (brightness)
+    cv::merge(hsvChannels, hsv);
+    cv::cvtColor(hsv, flowVisBGR, cv::COLOR_HSV2BGR);
+    flowVis = flowVisBGR;
     cv::Mat display;
     cv::hconcat(overlay, flowVis, display);
     cv::resize(display, display, cv::Size(outWidth, outHeight));
