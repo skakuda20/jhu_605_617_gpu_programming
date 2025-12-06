@@ -98,8 +98,10 @@ int main(int argc, char** argv) {
     cv::cvtColor(flowVis, hsv, cv::COLOR_BGR2HSV);
     std::vector<cv::Mat> hsvChannels;
     cv::split(hsv, hsvChannels);
+
     hsvChannels[1] = hsvChannels[1] * 3; // Increase saturation
-    hsvChannels[2] = hsvChannels[2] * 3; // Increase value (brightness)
+    hsvChannels[2] = hsvChannels[2] * 3; // Increase value
+    
     cv::merge(hsvChannels, hsv);
     cv::cvtColor(hsv, flowVisBGR, cv::COLOR_HSV2BGR);
     flowVis = flowVisBGR;
@@ -107,9 +109,9 @@ int main(int argc, char** argv) {
     cv::hconcat(overlay, flowVis, display);
     cv::resize(display, display, cv::Size(outWidth, outHeight));
     cv::imshow("Optical Flow - overlay | color", display);
-    visWriter.write(display); // Save visualization frame
+    visWriter.write(display);
+    
     if (cv::waitKey(1) == 27) break;
-
     prevGrayF = grayF.clone();
     }
 
